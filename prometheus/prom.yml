@@ -8,8 +8,13 @@ scrape_configs:
 
   - job_name: 'django-app'
     static_configs:
-      - targets: ['web.railway.internal']
+      - targets: ['llau-systems.up.railway.app']
     metrics_path: '/metrics'
     scheme: 'https'
     scrape_interval: 15s
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: site
+        replacement: 'llau-systems'
     
