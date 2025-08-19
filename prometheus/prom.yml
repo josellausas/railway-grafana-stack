@@ -6,15 +6,45 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'django-app'
+  # Llau Systems Django app
+  - job_name: 'llau-systems'
     static_configs:
-      - targets: ['llau-systems.up.railway.app']
+      - targets: ['llau-systems.up.railway.app:443']
     metrics_path: '/metrics'
     scheme: 'https'
     scrape_interval: 15s
+    scrape_timeout: 10s
     honor_labels: true
     relabel_configs:
       - source_labels: [__address__]
         target_label: site
         replacement: 'llau-systems'
+
+  # Josellausas Django app
+  - job_name: 'josellausas'
+    static_configs:
+      - targets: ['josellausas.com:443']
+    metrics_path: '/metrics'
+    scheme: 'https'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: site
+        replacement: 'josellausas'
+
+  # Josellausas Dev Django app
+  - job_name: 'josellausas-dev'
+    static_configs:
+      - targets: ['josellausas-dev3.up.railway.app:443']
+    metrics_path: '/metrics'
+    scheme: 'https'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: site
+        replacement: 'josellausas-dev'
     
