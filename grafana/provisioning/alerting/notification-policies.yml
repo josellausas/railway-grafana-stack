@@ -1,15 +1,9 @@
+# Notification policy tree for Grafana 11+.
+# Receiver must match a provisioned contact point name exactly (slack-webengine).
+# See: https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/
 apiVersion: 1
 
-# WARNING: This provisions the entire notification policy tree for orgId=1.
-# If you later manage policies in the UI, they may be overwritten on restart/reload.
 policies:
   - orgId: 1
-    receiver: grafana-default
-    group_by: ['...']
-    group_wait: 30s
-    group_interval: 5m
-    repeat_interval: 4h
-    routes:
-      - receiver: slack-webengine
-        matchers:
-          - source = webengine
+    receiver: slack-webengine
+    group_by: ['grafana_folder', 'alertname']

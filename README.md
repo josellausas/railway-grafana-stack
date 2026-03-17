@@ -117,9 +117,9 @@ Alert rules are provisioned from:
 
 Tune these thresholds after observing baseline traffic for a few days in your environment.
 
-### 3.3 Slack notifications (contact point + routing policy)
+### 3.3 Slack notifications (contact point + policy provisioned)
 
-This stack provisions a Slack contact point and routes all alerts with label `source=webengine` to Slack.
+This stack provisions a Slack contact point and a minimal notification policy that routes all alerts to `slack-webengine`.
 
 1. In the **Grafana** Railway service, set variables:
    - `SLACK_WEBHOOK_URL` = *(Slack incoming webhook URL)*
@@ -129,14 +129,14 @@ This stack provisions a Slack contact point and routes all alerts with label `so
 
 3. In Grafana UI, verify:
    - `Alerting` → `Contact points` contains **`slack-webengine`**
-   - `Alerting` → `Notification policies` has a route matching `source=webengine`
+   - `Alerting` → `Notification policies` shows the default policy using `slack-webengine`
+
+To add more specific routing (e.g. child policy for `source = webengine`), use the Grafana UI. Provisioned policies are not editable via UI; adjust `notification-policies.yml` and redeploy if you need file-based routing changes.
 
 Provisioning files:
 
 - `grafana/provisioning/alerting/contact-points.yml`
 - `grafana/provisioning/alerting/notification-policies.yml`
-
-Note: provisioning the notification policy tree is an “overwrite” operation. If you plan to manage policies in the UI long-term, prefer UI-managed policies and remove/disable the provisioned policy file.
 
 ### 4. Security notes
 
@@ -144,7 +144,16 @@ Note: provisioning the notification policy tree is an “overwrite” operation.
 - Loki, Prometheus, Tempo use private networking and are not exposed publicly.
 - Grafana is the only public service; harden it with strong credentials.
 
-### 5. Volume permission errors (fallback)
+### 5. Grafana crash: `[alerting.notifications.routes.invalidFormat] Invalid format of the submitted route`
+
+This error occurs when `notification-policies.yml` has invalid route format or references a contact point that does not exist. Ensure:
+
+- The `receiver` in the policy matches a provisioned contact point **name** exactly (e.g. `slack-webengine`).
+- The YAML structure follows [Grafana's provisioning format](https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/).
+
+This repo includes a valid minimal `notification-policies.yml`. If you deploy from a different source, replace or fix the notification policy file there.
+
+### 6. Volume permission errors (fallback)
 
 If Grafana, Loki, or Prometheus fails with `permission denied` on its volume, the entrypoint may not be running. Add this variable to the affected service:
 
