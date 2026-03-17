@@ -221,3 +221,5 @@ The pre-configured Grafana connections will continue to work with your customize
 ---
 
 Developed and maintained by [Mykal](https://mykal.codes). For issues or suggestions, please open an issue on the [GitHub repository](https://github.com/MykalMachon/grafana-stack-railway).
+
+Fixed the volumes
