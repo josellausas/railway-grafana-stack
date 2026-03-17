@@ -1,0 +1,15 @@
+apiVersion: 1
+
+# WARNING: This provisions the entire notification policy tree for orgId=1.
+# If you later manage policies in the UI, they may be overwritten on restart/reload.
+policies:
+  - orgId: 1
+    receiver: grafana-default
+    group_by: ['...']
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+    routes:
+      - receiver: slack-webengine
+        object_matchers:
+          - ['source', '=', 'webengine']

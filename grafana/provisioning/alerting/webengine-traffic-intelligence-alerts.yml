@@ -1,0 +1,121 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: webengine-traffic-intelligence
+    folder: Webengine
+    interval: 1m
+    rules:
+      - uid: webengine-suspicious-rate-spike
+        title: Webengine suspicious traffic spike
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: grafana_lokiq
+            model:
+              datasource:
+                type: loki
+                uid: grafana_lokiq
+              editorMode: code
+              expr: sum(rate({project_name="webengine",log_type="http"} | logfmt | status=~"403|444" [5m]))
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.5
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: classic_conditions
+        noDataState: NoData
+        execErrState: Error
+        for: 10m
+        labels:
+          severity: warning
+          source: webengine
+          category: suspicious-traffic
+        annotations:
+          summary: Suspicious traffic (403/444) is elevated.
+          description: Suspicious request rate has been above 0.5 req/s for 10 minutes.
+
+      - uid: webengine-probe-endpoint-surge
+        title: Webengine probe endpoint surge
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: grafana_lokiq
+            model:
+              datasource:
+                type: loki
+                uid: grafana_lokiq
+              editorMode: code
+              expr: sum(rate({project_name="webengine",log_type="http"} | logfmt | uri=~"(?i)^/(\\.env|\\.git|\\.htaccess|wp-admin|wp-login|phpmyadmin|server-status|config\\.php|backup\\.sql).*" [5m]))
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.1
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: classic_conditions
+        noDataState: NoData
+        execErrState: Error
+        for: 10m
+        labels:
+          severity: warning
+          source: webengine
+          category: probe-traffic
+        annotations:
+          summary: Probe endpoints are being hit at elevated rate.
+          description: Requests to common sensitive probe endpoints have been above 0.1 req/s for 10 minutes.

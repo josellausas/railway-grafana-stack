@@ -102,6 +102,42 @@ This dashboard is designed to answer two questions quickly: **where total traffi
 | Top Suspicious User Agents | Most common scanner clients | Expand `$bad_bot` patterns when safe and justified |
 | Suspicious Traffic Split by Domain | Which domain attracts most suspicious traffic share | Focus anti-abuse mitigations where pressure is highest |
 
+### 3.2 Provisioned alert rules (traffic intelligence)
+
+Grafana now provisions two default alert rules aligned with the traffic-intelligence dashboard:
+
+| Alert | Query intent | Default threshold |
+|------|---------------|-------------------|
+| `Webengine suspicious traffic spike` | Overall suspicious rate (`status=403/444`) | `> 0.5 req/s` for `10m` |
+| `Webengine probe endpoint surge` | Sensitive/probe URI hits (`.env`, `.git`, `wp-admin`, etc.) | `> 0.1 req/s` for `10m` |
+
+Alert rules are provisioned from:
+
+- `grafana/provisioning/alerting/webengine-traffic-intelligence-alerts.yml`
+
+Tune these thresholds after observing baseline traffic for a few days in your environment.
+
+### 3.3 Slack notifications (contact point + routing policy)
+
+This stack provisions a Slack contact point and routes all alerts with label `source=webengine` to Slack.
+
+1. In the **Grafana** Railway service, set variables:
+   - `SLACK_WEBHOOK_URL` = *(Slack incoming webhook URL)*
+   - `SLACK_CHANNEL` = *(e.g. `#alerts` or `@yourname`)*
+
+2. Restart Grafana (or use Admin API reload provisioning).
+
+3. In Grafana UI, verify:
+   - `Alerting` → `Contact points` contains **`slack-webengine`**
+   - `Alerting` → `Notification policies` has a route matching `source=webengine`
+
+Provisioning files:
+
+- `grafana/provisioning/alerting/contact-points.yml`
+- `grafana/provisioning/alerting/notification-policies.yml`
+
+Note: provisioning the notification policy tree is an “overwrite” operation. If you plan to manage policies in the UI long-term, prefer UI-managed policies and remove/disable the provisioned policy file.
+
 ### 4. Security notes
 
 - **No default passwords**: `GF_SECURITY_ADMIN_USER` and `GF_SECURITY_ADMIN_PASSWORD` must be set; there are no fallbacks.
