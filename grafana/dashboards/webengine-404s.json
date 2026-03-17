@@ -13,9 +13,13 @@
   "templating": {
     "list": [
       {
-        "name": "job",
-        "type": "custom",
-        "query": "webengine,nginx",
+        "name": "service_name",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "grafana_lokiq"
+        },
+        "query": "label_values({project_name=\"webengine\"}, service_name)",
         "includeAll": true,
         "multi": true,
         "current": {
@@ -31,7 +35,7 @@
           "type": "loki",
           "uid": "grafana_lokiq"
         },
-        "query": "label_values({job=~\"$job\"}, host)",
+        "query": "label_values({project_name=\"webengine\",service_name=~\"$service_name\"}, host)",
         "includeAll": true,
         "multi": true,
         "current": {
@@ -54,7 +58,7 @@
       "gridPos": { "h": 10, "w": 12, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "topk(20, sum by (uri) (count_over_time({job=~\"$job\",host=~\"$host\"} | json | status=404 [24h])))",
+          "expr": "topk(20, sum by (uri) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | json | httpStatus=404 [24h])))",
           "refId": "A",
           "legendFormat": "{{uri}}"
         }
@@ -82,7 +86,7 @@
       "gridPos": { "h": 10, "w": 12, "x": 12, "y": 0 },
       "targets": [
         {
-          "expr": "topk(20, sum by (remote_addr) (count_over_time({job=~\"$job\",host=~\"$host\"} | json | status=404 [24h])))",
+          "expr": "topk(20, sum by (srcIp) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | json | httpStatus=404 [24h])))",
           "refId": "A"
         }
       ]
@@ -98,7 +102,7 @@
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 10 },
       "targets": [
         {
-          "expr": "sum(rate({job=~\"$job\",host=~\"$host\"} | json | status=404 [5m]))",
+          "expr": "sum(rate({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | json | httpStatus=404 [5m]))",
           "refId": "A",
           "legendFormat": "404/s"
         }
