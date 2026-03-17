@@ -1,12 +1,12 @@
 ARG VERSION=11.5.2
 
+# gosu for dropping to grafana user after chown (Railway volumes mount as root)
+FROM tianon/gosu:1.16 AS gosu
+
 FROM grafana/grafana-oss:${VERSION}
 
 USER root
-
-# gosu for dropping to grafana user after chown (Railway volumes mount as root)
-RUN apt-get update && apt-get install -y --no-install-recommends gosu \
-    && rm -rf /var/lib/apt/lists/*
+COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
 
 # Provision datasources and dashboards
 COPY datasources /etc/grafana/provisioning/datasources
