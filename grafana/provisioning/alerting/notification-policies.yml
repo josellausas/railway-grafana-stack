@@ -11,5 +11,5 @@ policies:
     repeat_interval: 4h
     routes:
       - receiver: slack-webengine
-        object_matchers:
-          - ['source', '=', 'webengine']
+        matchers:
+          - source = webengine
