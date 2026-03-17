@@ -1,0 +1,349 @@
+{
+  "title": "Portfolio Observability Command Center",
+  "uid": "portfolio-observability-cc",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "project_name",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "grafana_lokiq"
+        },
+        "query": "label_values({log_type=\"http\"}, project_name)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        }
+      },
+      {
+        "name": "service_name",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "grafana_lokiq"
+        },
+        "query": "label_values({project_name=~\"${project_name:regex}\",log_type=\"http\"}, service_name)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        }
+      },
+      {
+        "name": "host",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "grafana_lokiq"
+        },
+        "query": "label_values({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",log_type=\"http\"}, host)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        }
+      },
+      {
+        "name": "prom_job",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "grafana_prometheus"
+        },
+        "query": "label_values(up, job)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Portfolio Request Rate by Project (req/s)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (project_name) (rate({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [5m]))",
+          "refId": "A",
+          "legendFormat": "{{project_name}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Total Requests (selected range)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [$__range]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Suspicious Share",
+      "datasource": {
+        "type": "__expr__",
+        "uid": "__expr__"
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "grafana_lokiq"
+          },
+          "expr": "sum(count_over_time({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [$__range]))",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "grafana_lokiq"
+          },
+          "expr": "(sum(count_over_time({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" [$__range])) or sum(count_over_time({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | status=~\"403|444\" [$__range])))",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "__expr__",
+            "uid": "__expr__"
+          },
+          "expression": "$B / $A",
+          "type": "math",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Bot-target Pressure (req/s)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "targets": [
+        {
+          "expr": "(sum(rate({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" | endpoint_class=\"bot_target\" [5m])) or sum(rate({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | uri=~\"(?i)^/(\\\\.env|\\\\.git|\\\\.htaccess|wp-admin|wp-login|phpmyadmin|server-status|config\\\\.php|backup\\\\.sql).*\" [5m])))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Suspicious Traffic Rate by Service (req/s)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "(sum by (service_name) (rate({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" [5m])) or sum by (service_name) (rate({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | status=~\"403|444\" [5m])))",
+          "refId": "A",
+          "legendFormat": "{{service_name}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Top Bot-target Endpoints",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "topk(20, sum by (uri) (count_over_time({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | endpoint_class=\"bot_target\" [$__range])))",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Top Suspicious Sources",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 },
+      "targets": [
+        {
+          "expr": "topk(20, sum by (remote_addr) (count_over_time({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" [$__range])))",
+          "refId": "A",
+          "legendFormat": "{{remote_addr}}"
+        },
+        {
+          "expr": "topk(20, sum by (srcIp) (count_over_time({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" [$__range])))",
+          "refId": "B",
+          "legendFormat": "{{srcIp}}"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Prometheus Target Availability by Job",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafana_prometheus"
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "avg by (job) (up{job=~\"${prom_job:regex}\"})",
+          "refId": "A",
+          "legendFormat": "{{job}}"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Global Scrape Health",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafana_prometheus"
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 16 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2
+        }
+      },
+      "targets": [
+        {
+          "expr": "avg(up{job=~\"${prom_job:regex}\"})",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "HTTP 5xx Rate by Job (if exported)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafana_prometheus"
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+      "targets": [
+        {
+          "expr": "sum by (job) (rate(http_requests_total{job=~\"${prom_job:regex}\",status=~\"5..\"}[5m])) or vector(0)",
+          "refId": "A",
+          "legendFormat": "{{job}}"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "P95 Request Latency by Job (if exported)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "grafana_prometheus"
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, job) (rate(http_request_duration_seconds_bucket{job=~\"${prom_job:regex}\"}[5m]))) or vector(0)",
+          "refId": "A",
+          "legendFormat": "{{job}}"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "traces",
+      "title": "Recent Traces (Tempo)",
+      "datasource": {
+        "type": "tempo",
+        "uid": "grafana_tempo"
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "search",
+          "query": "{}",
+          "limit": 20
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "text",
+      "title": "Operator Pivot Guide",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 32 },
+      "options": {
+        "mode": "markdown",
+        "content": "### Fast triage flow\\n1. **Traffic spike?** Start with `Portfolio Request Rate` and `Suspicious Share`.\\n2. **Security pressure?** Check `Bot-target Pressure`, `Top Bot-target Endpoints`, and `Top Suspicious Sources`.\\n3. **Reliability degradation?** Use `Target Availability`, `Global Scrape Health`, `5xx Rate`, and `P95 Latency`.\\n4. **Trace pivot:** Open Explore -> Tempo when a service has elevated error/latency and inspect recent traces.\\n\\nThis dashboard is designed for portfolio-level anomaly detection first, then service-level drill-down."
+      }
+    }
+  ]
+}

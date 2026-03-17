@@ -139,6 +139,33 @@ Use these checks whenever you deploy Nginx rule changes:
 7. Alert fallback check:
    - If `traffic_class`/`endpoint_class` is missing, suspicious and probe alerts still evaluate via status/URI fallback queries.
 
+### 3.5 Portfolio Observability Command Center (Loki + Prometheus + Tempo)
+
+This repository now provisions a flagship dashboard for portfolio-level operations:
+
+- **Dashboard title**: `Portfolio Observability Command Center`
+- **Dashboard file**: `grafana/dashboards/portfolio-observability-command-center.json`
+- **Intent**: fast anomaly detection across traffic quality, service reliability, and traceability in one view.
+
+#### Variables
+
+- `project_name`: portfolio project filter from Loki labels
+- `service_name`: service filter scoped by selected projects
+- `host`: host/domain filter scoped by selected project/service
+- `prom_job`: Prometheus scrape job filter
+
+#### How to operate it
+
+1. Start with **Portfolio Request Rate by Project** and **Suspicious Share**.
+2. If pressure rises, inspect **Bot-target Pressure**, **Top Bot-target Endpoints**, and **Top Suspicious Sources**.
+3. Check reliability context in **Prometheus Target Availability**, **Global Scrape Health**, **5xx Rate**, and **P95 Latency**.
+4. Pivot to traces with **Recent Traces (Tempo)** for high-latency/error services.
+
+#### Query fallback strategy
+
+- Suspicious traffic detection prefers explicit Nginx classification (`traffic_class`, `endpoint_class`) and falls back to status/URI heuristics where needed.
+- Source identity queries account for mixed field naming (`remote_addr` and `srcIp`) while schemas converge.
+
 ### 3.3 Slack notifications (contact point + policy provisioned)
 
 This stack provisions a Slack contact point and a minimal notification policy that routes all alerts to `slack-webengine`.
