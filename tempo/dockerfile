@@ -1,4 +1,4 @@
-ARG VERSION=latest
+ARG VERSION=v2.7.1
 
 FROM grafana/tempo:${VERSION}
 
