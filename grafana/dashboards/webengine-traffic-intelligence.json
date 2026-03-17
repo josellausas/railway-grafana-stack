@@ -21,6 +21,7 @@
         },
         "query": "label_values({project_name=\"webengine\"}, service_name)",
         "includeAll": true,
+        "allValue": ".*",
         "multi": true,
         "current": {
           "selected": true,
@@ -39,6 +40,7 @@
         },
         "query": "label_values({project_name=\"webengine\",service_name=~\"$service_name\"}, host)",
         "includeAll": true,
+        "allValue": ".*",
         "multi": true,
         "current": {
           "selected": true,
@@ -305,7 +307,7 @@
             "type": "loki",
             "uid": "grafana_lokiq"
           },
-          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=404 [$__range]))",
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=\"404\" [$__range]))",
           "refId": "B"
         },
         {
