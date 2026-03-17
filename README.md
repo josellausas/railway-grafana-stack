@@ -76,9 +76,31 @@ Use the exact service names (Loki, Prometheus, Tempo) as shown in your project.
 
 To ingest webengine nginx logs into Loki with no code changes:
 
-1. Add [Locomotive](https://railway.com/template/jP9r-f) to the same project.
-2. Configure: Railway API key, webengine service ID, Loki URL = `${{Grafana.LOKI_INTERNAL_URL}}`.
-3. Logs will flow to Loki. A **Webengine 404s** dashboard is provisioned; open it in Grafana to see top 404 URIs, most active IPs, and 404 rate over time. Adjust the `job` template variable if Locomotive uses a different label for the webengine service.
+1. Add [Locomotive](https://railway.com/new/template/locomotive) to the same project.
+2. Configure: account-scoped Railway API key, webengine/nginx service IDs, `LOCOMOTIVE_WEBHOOK_MODE=loki`, and Loki URL = `${{Grafana.LOKI_INTERNAL_URL}}/loki/api/v1/push`.
+3. Logs will flow to Loki. Two dashboards are provisioned:
+   - **Webengine 404s**: top 404 URIs, most active 404 source IPs, and 404 rate over time.
+   - **Webengine Traffic Intelligence**: domain traffic share, status-code mix, suspicious traffic (403/444) behavior, top probe endpoints, and suspicious source concentration.
+   Adjust the `service_name` template variable if your service labels differ.
+
+### 3.1 Webengine Traffic Intelligence dashboard: how to read it
+
+This dashboard is designed to answer two questions quickly: **where total traffic is going** and **how suspicious traffic is behaving**.
+
+| Panel | What it tells you | Action to take |
+|------|--------------------|----------------|
+| Traffic Rate by Domain | Real-time request rate split across domains | Check for sudden demand shifts between domains |
+| Domain Traffic Volume / Share | Total and percentage traffic per domain for selected range | Detect domain imbalance and plan scaling/marketing focus |
+| Top Source IPs (all traffic) | Most active external clients across total traffic | Detect concentrated traffic sources and prioritize abuse mitigation |
+| Status Code Mix | Distribution of 2xx/3xx/4xx/5xx/403/444 | Rising 4xx/5xx indicates app or routing regressions; rising 403/444 indicates scanner pressure |
+| Traffic Split: Legit vs Suspicious | Portion of requests blocked/flagged as suspicious | Track baseline noise floor and compare before/after security changes |
+| 404 Share of All Traffic | Fraction of all requests that are 404 | Distinguish broken links/content issues from scanning spikes |
+| Suspicious Request Rate by Domain | Which domain receives more blocked probe traffic | Prioritize domain-specific hardening and alerting |
+| Suspicious Request Density Heatmap | Time-density view of suspicious events | Identify recurring attack windows for tuned alert timing |
+| Top Suspicious Source IPs Over Time | Whether attacks are concentrated in a few IPs or distributed | If concentrated, add targeted blocks/rate limits; if distributed, tune generic protections |
+| Top Probe Endpoints | Most targeted external endpoints (`.env`, `.git`, `wp-admin`, etc.) | Prioritize deny rules and monitor for new probe families |
+| Top Suspicious User Agents | Most common scanner clients | Expand `$bad_bot` patterns when safe and justified |
+| Suspicious Traffic Split by Domain | Which domain attracts most suspicious traffic share | Focus anti-abuse mitigations where pressure is highest |
 
 ### 4. Security notes
 
@@ -171,9 +193,9 @@ All services are deployed using official Docker images and configured to work to
 
 ## Connecting Your Applications
 
-### Using [Locomotive](https://railway.com/template/jP9r-f) for Loki
+### Using [Locomotive](https://railway.com/new/template/locomotive) for Loki
 
-You can easily ingest *all* of your railway logs into Loki from *any* service using [Locomotive](https://railway.com/template/jP9r-f). Just spin up their template, drop in your Railway API key, the ID of the services you want to monitor, and a link to your new Loki instance and logs will start flowing! no code changes needed anywhere!
+You can easily ingest *all* of your railway logs into Loki from *any* service using [Locomotive](https://railway.com/new/template/locomotive). Deploy the template, set your account-scoped Railway API key, add the service IDs you want to monitor, and set `LOCOMOTIVE_WEBHOOK_URL` to your Loki push endpoint (`.../loki/api/v1/push`). No code changes needed.
 
 ### Using OpenTelemetry libraries for Tempo 
 
@@ -210,7 +232,7 @@ The pre-configured Grafana connections will continue to work with your customize
 
 ## Additional Resources
 
-- [Locomotive: a loki transport for railway services](https://railway.com/template/jP9r-f)
+- [Locomotive: a loki transport for railway services](https://railway.com/deploy/locomotive)
 - [Grafana Documentation](https://grafana.com/docs/grafana/latest/)
 - [Loki Documentation](https://grafana.com/docs/loki/latest/)
 - [Prometheus Documentation](https://prometheus.io/docs/introduction/overview/)
@@ -221,5 +243,3 @@ The pre-configured Grafana connections will continue to work with your customize
 ---
 
 Developed and maintained by [Mykal](https://mykal.codes). For issues or suggestions, please open an issue on the [GitHub repository](https://github.com/MykalMachon/grafana-stack-railway).
-
-Fixed the volumes

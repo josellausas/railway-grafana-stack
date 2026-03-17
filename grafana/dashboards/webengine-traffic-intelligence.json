@@ -1,0 +1,513 @@
+{
+  "title": "Webengine Traffic Intelligence",
+  "uid": "webengine-traffic-intel",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "service_name",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "grafana_lokiq"
+        },
+        "query": "label_values({project_name=\"webengine\"}, service_name)",
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        }
+      },
+      {
+        "name": "host",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "grafana_lokiq"
+        },
+        "query": "label_values({project_name=\"webengine\",service_name=~\"$service_name\"}, host)",
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": [
+            "$__all"
+          ]
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Traffic Rate by Domain (req/s)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum by (host) (rate({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [5m]))",
+          "refId": "A",
+          "legendFormat": "{{host}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Total Requests (selected range)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "piechart",
+      "title": "Status Code Mix",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum by (status) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range]))",
+          "refId": "A",
+          "legendFormat": "HTTP {{status}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "percent",
+            "value"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Domain Traffic Volume (selected range)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "sum by (host) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range]))",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 5,
+      "type": "piechart",
+      "title": "Domain Traffic Share",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "sum by (host) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range]))",
+          "refId": "A",
+          "legendFormat": "{{host}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "percent",
+            "value"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Top Endpoints (all traffic)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 8
+      },
+      "targets": [
+        {
+          "expr": "topk(20, sum by (uri) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range])))",
+          "refId": "A",
+          "legendFormat": "{{uri}}"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 7,
+      "type": "piechart",
+      "title": "Traffic Split: Legit vs Suspicious",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status!~\"403|444\" [$__range]))",
+          "refId": "A",
+          "legendFormat": "Legit"
+        },
+        {
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [$__range]))",
+          "refId": "B",
+          "legendFormat": "Suspicious (403/444)"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "percent",
+            "value"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "404 Share of All Traffic",
+      "datasource": {
+        "type": "__expr__",
+        "uid": "__expr__"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 16
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "grafana_lokiq"
+          },
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range]))",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "grafana_lokiq"
+          },
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=404 [$__range]))",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "__expr__",
+            "uid": "__expr__"
+          },
+          "expression": "$B / $A",
+          "refId": "C",
+          "type": "math"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2
+        }
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Suspicious Request Rate by Domain (403/444)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "targets": [
+        {
+          "expr": "sum by (host) (rate({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [5m]))",
+          "refId": "A",
+          "legendFormat": "{{host}}"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "heatmap",
+      "title": "Suspicious Request Density Heatmap",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 22
+      },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [5m]))",
+          "refId": "A",
+          "legendFormat": "suspicious events"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Top Suspicious Source IPs Over Time",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (remote_addr) (rate({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [5m])))",
+          "refId": "A",
+          "legendFormat": "{{remote_addr}}"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "table",
+      "title": "Top Probe Endpoints (403/444)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 30
+      },
+      "targets": [
+        {
+          "expr": "topk(25, sum by (uri) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [$__range])))",
+          "refId": "A",
+          "legendFormat": "{{uri}}"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 13,
+      "type": "table",
+      "title": "Top Suspicious User Agents",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 30
+      },
+      "targets": [
+        {
+          "expr": "topk(20, sum by (user_agent) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [$__range])))",
+          "refId": "A",
+          "legendFormat": "{{user_agent}}"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    },
+    {
+      "id": 14,
+      "type": "piechart",
+      "title": "Suspicious Traffic Split by Domain",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 30
+      },
+      "targets": [
+        {
+          "expr": "sum by (host) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [$__range]))",
+          "refId": "A",
+          "legendFormat": "{{host}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "percent",
+            "value"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "type": "table",
+      "title": "Top Source IPs (all traffic)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 38
+      },
+      "targets": [
+        {
+          "expr": "topk(20, sum by (remote_addr) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range])))",
+          "refId": "A",
+          "legendFormat": "{{remote_addr}}"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      }
+    }
+  ]
+}
