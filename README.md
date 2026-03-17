@@ -56,7 +56,7 @@ In your webengine Railway project:
    - Tempo: mount path `/var/tempo`
    - Grafana: mount path `/var/lib/grafana`
 
-   Railway volumes mount as root. Grafana, Loki, and Prometheus use a custom entrypoint that `chown`s the volume to the correct non-root user before starting. Tempo uses a distroless base (no shell), so it runs as root to write to `/var/tempo`.
+   Railway volumes mount as root. Grafana, Loki, and Prometheus use a custom entrypoint that `chown`s the volume to the correct non-root user before starting. Tempo uses a distroless image (no shell for entrypoint scripts), so the Dockerfile sets `USER root` to write to `/var/tempo`.
 
 ### 2. Configure Grafana variables
 
@@ -137,7 +137,7 @@ Examples:
 - Grafana: `VERSION=11.5.2`
 - Loki: `VERSION=3.4.2`
 - Prometheus: `VERSION=v3.2.1`
-- Tempo: `VERSION=v2.7.1`
+- Tempo: `VERSION=2.10.3` (Docker Hub uses numeric tags; `v2.7.1` does not exist)
 
 This allows you to update each component independently as needed.
 

@@ -1,9 +1,10 @@
-ARG VERSION=v2.7.1
+# Pin to 2.10.3 - Docker Hub uses numeric tags (no 'v' prefix).
+# v2.7.1 does not exist; latest had config-breaking changes.
+ARG VERSION=2.10.3
 
 FROM grafana/tempo:${VERSION}
 
-# Tempo image is distroless (no /bin/sh); cannot run entrypoint script.
-# Run as root so Railway volume at /var/tempo is writable.
+# Distroless image: no shell, no RUN. Run as root so Railway volume at /var/tempo is writable.
 USER root
 
 COPY tempo.yml /etc/tempo/tempo.yml

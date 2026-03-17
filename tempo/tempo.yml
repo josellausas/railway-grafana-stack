@@ -1,9 +1,7 @@
+# Minimal config for Tempo 2.10.x (monolithic mode).
+# Compactor block removed - not in app.Config for 2.10; backend_scheduler handles compaction.
 server:
   http_listen_port: 3200
-
-compactor:
-  compaction:
-    compaction_window: 1h
 
 distributor:
   receivers:
@@ -17,5 +15,7 @@ distributor:
 storage:
   trace:
     backend: local
+    wal:
+      path: /var/tempo/wal
     local:
-      path: /var/tempo/traces
+      path: /var/tempo/blocks
