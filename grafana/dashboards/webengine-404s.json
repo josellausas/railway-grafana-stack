@@ -1,0 +1,108 @@
+{
+  "title": "Webengine 404s",
+  "uid": "webengine-404s",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "job",
+        "type": "custom",
+        "query": "webengine,nginx",
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": ["$__all"]
+        }
+      },
+      {
+        "name": "host",
+        "type": "query",
+        "datasource": {
+          "type": "loki",
+          "uid": "grafana_lokiq"
+        },
+        "query": "label_values({job=~\"$job\"}, host)",
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": ["$__all"]
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Top 20 404 URIs (24h)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "topk(20, sum by (uri) (count_over_time({job=~\"$job\",host=~\"$host\"} | json | status=404 [24h])))",
+          "refId": "A",
+          "legendFormat": "{{uri}}"
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Most active IPs (404s, 24h)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "topk(20, sum by (remote_addr) (count_over_time({job=~\"$job\",host=~\"$host\"} | json | status=404 [24h])))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "404 rate over time",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 10 },
+      "targets": [
+        {
+          "expr": "sum(rate({job=~\"$job\",host=~\"$host\"} | json | status=404 [5m]))",
+          "refId": "A",
+          "legendFormat": "404/s"
+        }
+      ]
+    }
+  ]
+}

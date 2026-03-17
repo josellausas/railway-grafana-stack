@@ -32,12 +32,64 @@ This template is perfect for teams who need a comprehensive observability soluti
 7. Hook up your applications to the datasources.
 8. Create dashboards, alerts, and explore your data in Grafana!
 
+## Adding to webengine project (Railway private networking)
+
+This stack is designed to run in the **same Railway project** as webengine so services communicate via private networking. Railway does not deploy docker-compose directly; add each service manually.
+
+### 1. Add Grafana stack services
+
+In your webengine Railway project:
+
+1. **New → Empty Service** (repeat 4 times). Name them: `Grafana`, `Loki`, `Prometheus`, `Tempo`.
+
+2. **Connect each to the strategy repo** (Settings → Source):
+   - Connect the repo containing this stack.
+   - Set **Root Directory** per service:
+     - Grafana: `railway-grafana-stack/grafana`
+     - Loki: `railway-grafana-stack/loki`
+     - Prometheus: `railway-grafana-stack/prometheus`
+     - Tempo: `railway-grafana-stack/tempo`
+
+3. **Add volumes** (Settings → Volumes) for persistence:
+   - Loki: mount path `/loki`
+   - Prometheus: mount path `/prometheus`
+   - Tempo: mount path `/var/tempo`
+   - Grafana: mount path `/var/lib/grafana`
+
+### 2. Configure Grafana variables
+
+In the Grafana service, set (Variables tab):
+
+| Variable | Value |
+|----------|-------|
+| `GF_SECURITY_ADMIN_USER` | Your admin username |
+| `GF_SECURITY_ADMIN_PASSWORD` | Strong password (use Railway secret) |
+| `LOKI_INTERNAL_URL` | `http://${{Loki.RAILWAY_PRIVATE_DOMAIN}}:3100` |
+| `PROMETHEUS_INTERNAL_URL` | `http://${{Prometheus.RAILWAY_PRIVATE_DOMAIN}}:9090` |
+| `TEMPO_INTERNAL_URL` | `http://${{Tempo.RAILWAY_PRIVATE_DOMAIN}}:3200` |
+
+Use the exact service names (Loki, Prometheus, Tempo) as shown in your project.
+
+### 3. Add Locomotive for webengine logs (Option A)
+
+To ingest webengine nginx logs into Loki with no code changes:
+
+1. Add [Locomotive](https://railway.com/template/jP9r-f) to the same project.
+2. Configure: Railway API key, webengine service ID, Loki URL = `${{Grafana.LOKI_INTERNAL_URL}}`.
+3. Logs will flow to Loki. A **Webengine 404s** dashboard is provisioned; open it in Grafana to see top 404 URIs, most active IPs, and 404 rate over time. Adjust the `job` template variable if Locomotive uses a different label for the webengine service.
+
+### 4. Security notes
+
+- **No default passwords**: `GF_SECURITY_ADMIN_USER` and `GF_SECURITY_ADMIN_PASSWORD` must be set; there are no fallbacks.
+- Loki, Prometheus, Tempo use private networking and are not exposed publicly.
+- Grafana is the only public service; harden it with strong credentials.
+
 ## Optional Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `GF_SECURITY_ADMIN_USER` | Username for the Grafana admin account | Required input |
-| `GF_SECURITY_ADMIN_PASSWORD` | Password for the Grafana admin account | Auto-generated secure string |
+| `GF_SECURITY_ADMIN_USER` | Username for the Grafana admin account | **Required** — no default |
+| `GF_SECURITY_ADMIN_PASSWORD` | Password for the Grafana admin account | **Required** — no default |
 | `GF_DEFAULT_INSTANCE_NAME` | Name of your Grafana instance | `Grafana on Railway` |
 | `GF_INSTALL_PLUGINS` | Comma-separated list of Grafana plugins to install | `grafana-simple-json-datasource,grafana-piechart-panel,grafana-worldmap-panel,grafana-clock-panel` |
 
