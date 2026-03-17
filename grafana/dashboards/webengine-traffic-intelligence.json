@@ -56,7 +56,7 @@
     {
       "id": 1,
       "type": "timeseries",
-      "title": "Traffic Rate by Domain (req/s)",
+      "title": "Domain Traffic Trend (req/s)",
       "datasource": {
         "type": "loki",
         "uid": "grafana_lokiq"
@@ -73,7 +73,28 @@
           "refId": "A",
           "legendFormat": "{{host}}"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 20,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        }
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
     },
     {
       "id": 2,
@@ -112,9 +133,9 @@
       },
       "targets": [
         {
-          "expr": "sum by (status) (count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [$__range]))",
+          "expr": "sum by (http_status) (count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | regexp \"status=(?P<http_status>[0-9]{3})\" [$__range]))",
           "refId": "A",
-          "legendFormat": "HTTP {{status}}"
+          "legendFormat": "HTTP {{http_status}}"
         }
       ],
       "options": {
@@ -141,7 +162,7 @@
     },
     {
       "id": 4,
-      "type": "table",
+      "type": "barchart",
       "title": "Domain Traffic Volume (selected range)",
       "datasource": {
         "type": "loki",
@@ -156,11 +177,25 @@
       "targets": [
         {
           "expr": "sum by (host) (count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [$__range]))",
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "{{host}}",
+          "instant": true
         }
       ],
       "options": {
-        "showHeader": true
+        "orientation": "horizontal",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0,
+        "showValue": "auto",
+        "stacking": "none",
+        "barWidth": 0.9,
+        "groupWidth": 0.7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0
+        }
       }
     },
     {
@@ -209,7 +244,7 @@
     {
       "id": 6,
       "type": "table",
-      "title": "Top Endpoints (all traffic)",
+      "title": "Top 10 Host + Endpoint (all traffic)",
       "datasource": {
         "type": "loki",
         "uid": "grafana_lokiq"
@@ -222,9 +257,10 @@
       },
       "targets": [
         {
-          "expr": "topk(20, sum by (uri) (count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [$__range])))",
+          "expr": "topk(10, sum by (host, uri) (count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [$__range])))",
           "refId": "A",
-          "legendFormat": "{{uri}}"
+          "legendFormat": "{{host}} {{uri}}",
+          "instant": true
         }
       ],
       "options": {
@@ -307,7 +343,7 @@
             "type": "loki",
             "uid": "grafana_lokiq"
           },
-          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | status=\"404\" [$__range]))",
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | regexp \"status=(?P<http_status>[0-9]{3})\" | http_status=\"404\" [$__range]))",
           "refId": "B"
         },
         {
@@ -509,6 +545,98 @@
       ],
       "options": {
         "showHeader": true
+      }
+    },
+    {
+      "id": 16,
+      "type": "piechart",
+      "title": "HTTP Status Class Mix (2xx/3xx/4xx/5xx)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 38
+      },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | regexp \"status=(?P<http_status>[0-9]{3})\" | http_status=~\"2..\" [$__range]))",
+          "refId": "A",
+          "legendFormat": "2xx"
+        },
+        {
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | regexp \"status=(?P<http_status>[0-9]{3})\" | http_status=~\"3..\" [$__range]))",
+          "refId": "B",
+          "legendFormat": "3xx"
+        },
+        {
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | regexp \"status=(?P<http_status>[0-9]{3})\" | http_status=~\"4..\" [$__range]))",
+          "refId": "C",
+          "legendFormat": "4xx"
+        },
+        {
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | regexp \"status=(?P<http_status>[0-9]{3})\" | http_status=~\"5..\" [$__range]))",
+          "refId": "D",
+          "legendFormat": "5xx"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "percent",
+            "value"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "heatmap",
+      "title": "Domain Traffic by Hour-of-Day (heatmap)",
+      "datasource": {
+        "type": "loki",
+        "uid": "grafana_lokiq"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 46
+      },
+      "targets": [
+        {
+          "expr": "sum by (host) (count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [1h]))",
+          "refId": "A",
+          "legendFormat": "{{host}}"
+        }
+      ],
+      "options": {
+        "calculate": false,
+        "cellGap": 1,
+        "legend": {
+          "show": true
+        },
+        "showValue": "never",
+        "tooltip": {
+          "show": true,
+          "yHistogram": false
+        }
       }
     }
   ]

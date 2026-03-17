@@ -153,7 +153,7 @@
             "type": "loki",
             "uid": "grafana_lokiq"
           },
-          "expr": "(sum(count_over_time({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" [$__range])) or sum(count_over_time({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | status=~\"403|444\" [$__range])))",
+          "expr": "sum(count_over_time({project_name=~\"${project_name:regex}\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | status=~\"403|444\" [$__range]))",
           "refId": "B"
         },
         {
@@ -161,7 +161,7 @@
             "type": "__expr__",
             "uid": "__expr__"
           },
-          "expression": "$B / $A",
+          "expression": "$B / ($A + 0.000001)",
           "type": "math",
           "refId": "C"
         }
