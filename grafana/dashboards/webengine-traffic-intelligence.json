@@ -38,7 +38,7 @@
           "type": "loki",
           "uid": "grafana_lokiq"
         },
-        "query": "label_values({project_name=\"webengine\",service_name=~\"$service_name\"}, host)",
+        "query": "label_values({project_name=\"webengine\",service_name=~\"${service_name:regex}\"}, host)",
         "includeAll": true,
         "allValue": ".*",
         "multi": true,
@@ -69,7 +69,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (host) (rate({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [5m]))",
+          "expr": "sum by (host) (rate({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [5m]))",
           "refId": "A",
           "legendFormat": "{{host}}"
         }
@@ -91,7 +91,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range]))",
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [$__range]))",
           "refId": "A"
         }
       ]
@@ -112,7 +112,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (status) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range]))",
+          "expr": "sum by (status) (count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [$__range]))",
           "refId": "A",
           "legendFormat": "HTTP {{status}}"
         }
@@ -155,7 +155,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (host) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range]))",
+          "expr": "sum by (host) (count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [$__range]))",
           "refId": "A"
         }
       ],
@@ -179,7 +179,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (host) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range]))",
+          "expr": "sum by (host) (count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [$__range]))",
           "refId": "A",
           "legendFormat": "{{host}}"
         }
@@ -222,7 +222,7 @@
       },
       "targets": [
         {
-          "expr": "topk(20, sum by (uri) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range])))",
+          "expr": "topk(20, sum by (uri) (count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [$__range])))",
           "refId": "A",
           "legendFormat": "{{uri}}"
         }
@@ -234,7 +234,7 @@
     {
       "id": 7,
       "type": "piechart",
-      "title": "Traffic Split: Legit vs Suspicious",
+      "title": "Traffic Split: Normal vs Suspicious",
       "datasource": {
         "type": "loki",
         "uid": "grafana_lokiq"
@@ -247,14 +247,14 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status!~\"403|444\" [$__range]))",
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class!=\"suspicious\" [$__range]))",
           "refId": "A",
           "legendFormat": "Legit"
         },
         {
-          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [$__range]))",
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" [$__range]))",
           "refId": "B",
-          "legendFormat": "Suspicious (403/444)"
+          "legendFormat": "Suspicious (traffic_class)"
         }
       ],
       "options": {
@@ -299,7 +299,7 @@
             "type": "loki",
             "uid": "grafana_lokiq"
           },
-          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt [$__range]))",
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt [$__range]))",
           "refId": "A"
         },
         {
@@ -307,7 +307,7 @@
             "type": "loki",
             "uid": "grafana_lokiq"
           },
-          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=\"404\" [$__range]))",
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | status=\"404\" [$__range]))",
           "refId": "B"
         },
         {
@@ -330,7 +330,7 @@
     {
       "id": 9,
       "type": "timeseries",
-      "title": "Suspicious Request Rate by Domain (403/444)",
+      "title": "Suspicious Request Rate by Domain",
       "datasource": {
         "type": "loki",
         "uid": "grafana_lokiq"
@@ -343,7 +343,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (host) (rate({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [5m]))",
+          "expr": "sum by (host) (rate({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" [5m]))",
           "refId": "A",
           "legendFormat": "{{host}}"
         }
@@ -352,7 +352,7 @@
     {
       "id": 10,
       "type": "heatmap",
-      "title": "Suspicious Request Density Heatmap",
+      "title": "Bot-target Suspicious Density Heatmap",
       "datasource": {
         "type": "loki",
         "uid": "grafana_lokiq"
@@ -365,16 +365,16 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [5m]))",
+          "expr": "sum(count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" | endpoint_class=\"bot_target\" [5m]))",
           "refId": "A",
-          "legendFormat": "suspicious events"
+          "legendFormat": "bot-target suspicious events"
         }
       ]
     },
     {
       "id": 11,
       "type": "timeseries",
-      "title": "Top Suspicious Source IPs Over Time",
+      "title": "Top Bot-target Source IPs Over Time",
       "datasource": {
         "type": "loki",
         "uid": "grafana_lokiq"
@@ -387,7 +387,7 @@
       },
       "targets": [
         {
-          "expr": "topk(10, sum by (remote_addr) (rate({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [5m])))",
+          "expr": "topk(10, sum by (remote_addr) (rate({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" | endpoint_class=\"bot_target\" [5m])))",
           "refId": "A",
           "legendFormat": "{{remote_addr}}"
         }
@@ -396,7 +396,7 @@
     {
       "id": 12,
       "type": "table",
-      "title": "Top Probe Endpoints (403/444)",
+      "title": "Top Bot-target Endpoints (suspicious)",
       "datasource": {
         "type": "loki",
         "uid": "grafana_lokiq"
@@ -409,7 +409,7 @@
       },
       "targets": [
         {
-          "expr": "topk(25, sum by (uri) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [$__range])))",
+          "expr": "topk(25, sum by (uri) (count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" | endpoint_class=\"bot_target\" [$__range])))",
           "refId": "A",
           "legendFormat": "{{uri}}"
         }
@@ -434,7 +434,7 @@
       },
       "targets": [
         {
-          "expr": "topk(20, sum by (user_agent) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [$__range])))",
+          "expr": "topk(20, sum by (user_agent) (count_over_time({project_name=\"webengine\",service_name=~\"${service_name:regex}\",host=~\"${host:regex}\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" [$__range])))",
           "refId": "A",
           "legendFormat": "{{user_agent}}"
         }
@@ -459,7 +459,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (host) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | status=~\"403|444\" [$__range]))",
+          "expr": "sum by (host) (count_over_time({project_name=\"webengine\",service_name=~\"$service_name\",host=~\"$host\",log_type=\"http\"} | logfmt | traffic_class=\"suspicious\" [$__range]))",
           "refId": "A",
           "legendFormat": "{{host}}"
         }

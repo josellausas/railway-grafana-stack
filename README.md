@@ -80,7 +80,7 @@ To ingest webengine nginx logs into Loki with no code changes:
 2. Configure: account-scoped Railway API key, webengine/nginx service IDs, `LOCOMOTIVE_WEBHOOK_MODE=loki`, and Loki URL = `${{Grafana.LOKI_INTERNAL_URL}}/loki/api/v1/push`.
 3. Logs will flow to Loki. Two dashboards are provisioned:
    - **Webengine 404s**: top 404 URIs, most active 404 source IPs, and 404 rate over time.
-   - **Webengine Traffic Intelligence**: domain traffic share, status-code mix, suspicious traffic (403/444) behavior, top probe endpoints, and suspicious source concentration.
+   - **Webengine Traffic Intelligence**: domain traffic share, status-code mix, explicit Nginx traffic classification (`traffic_class`, `endpoint_class`, `rule_reason`), bot-target behavior, and suspicious source concentration.
    Adjust the `service_name` template variable if your service labels differ.
 
 ### 3.1 Webengine Traffic Intelligence dashboard: how to read it
@@ -92,13 +92,13 @@ This dashboard is designed to answer two questions quickly: **where total traffi
 | Traffic Rate by Domain | Real-time request rate split across domains | Check for sudden demand shifts between domains |
 | Domain Traffic Volume / Share | Total and percentage traffic per domain for selected range | Detect domain imbalance and plan scaling/marketing focus |
 | Top Source IPs (all traffic) | Most active external clients across total traffic | Detect concentrated traffic sources and prioritize abuse mitigation |
-| Status Code Mix | Distribution of 2xx/3xx/4xx/5xx/403/444 | Rising 4xx/5xx indicates app or routing regressions; rising 403/444 indicates scanner pressure |
-| Traffic Split: Legit vs Suspicious | Portion of requests blocked/flagged as suspicious | Track baseline noise floor and compare before/after security changes |
+| Status Code Mix | Distribution of 2xx/3xx/4xx/5xx | Rising 4xx/5xx indicates app or routing regressions |
+| Traffic Split: Normal vs Suspicious | Portion of requests tagged by `traffic_class` | Track baseline noise floor and compare before/after security changes |
 | 404 Share of All Traffic | Fraction of all requests that are 404 | Distinguish broken links/content issues from scanning spikes |
-| Suspicious Request Rate by Domain | Which domain receives more blocked probe traffic | Prioritize domain-specific hardening and alerting |
-| Suspicious Request Density Heatmap | Time-density view of suspicious events | Identify recurring attack windows for tuned alert timing |
-| Top Suspicious Source IPs Over Time | Whether attacks are concentrated in a few IPs or distributed | If concentrated, add targeted blocks/rate limits; if distributed, tune generic protections |
-| Top Probe Endpoints | Most targeted external endpoints (`.env`, `.git`, `wp-admin`, etc.) | Prioritize deny rules and monitor for new probe families |
+| Suspicious Request Rate by Domain | Which domain receives more suspicious classified traffic | Prioritize domain-specific hardening and alerting |
+| Bot-target Suspicious Density Heatmap | Time-density of suspicious requests against bot/probe targets | Identify recurring attack windows for tuned alert timing |
+| Top Bot-target Source IPs Over Time | Whether bot-target attacks are concentrated in a few IPs or distributed | If concentrated, add targeted blocks/rate limits; if distributed, tune generic protections |
+| Top Bot-target Endpoints (suspicious) | Most targeted external probe endpoints (`.env`, `.git`, `wp-admin`, etc.) | Prioritize deny rules and monitor for new probe families |
 | Top Suspicious User Agents | Most common scanner clients | Expand `$bad_bot` patterns when safe and justified |
 | Suspicious Traffic Split by Domain | Which domain attracts most suspicious traffic share | Focus anti-abuse mitigations where pressure is highest |
 
@@ -108,14 +108,36 @@ Grafana now provisions two default alert rules aligned with the traffic-intellig
 
 | Alert | Query intent | Default threshold |
 |------|---------------|-------------------|
-| `Webengine suspicious traffic spike` | Overall suspicious rate (`status=403/444`) | `> 0.5 req/s` for `10m` |
-| `Webengine probe endpoint surge` | Sensitive/probe URI hits (`.env`, `.git`, `wp-admin`, etc.) | `> 0.1 req/s` for `10m` |
+| `Webengine suspicious traffic spike` | Overall suspicious rate (`traffic_class="suspicious"` with status fallback) | `> 0.5 req/s` for `10m` |
+| `Webengine probe endpoint surge` | Bot-target suspicious hits (`endpoint_class="bot_target"` with URI fallback) | `> 0.1 req/s` for `10m` |
 
 Alert rules are provisioned from:
 
 - `grafana/provisioning/alerting/webengine-traffic-intelligence-alerts.yml`
 
 Tune these thresholds after observing baseline traffic for a few days in your environment.
+
+### 3.4 E2E validation runbook (Nginx -> Railway logs -> Loki -> Grafana)
+
+Use these checks whenever you deploy Nginx rule changes:
+
+1. Confirm runtime services are healthy in `webengine/production`:
+   - `webengine` (nginx edge)
+   - `Locomotive` (Railway logs transport)
+   - `Loki`
+2. In Grafana Explore (Loki), validate logs exist:
+   - `{project_name="webengine",log_type="http"}`
+3. Validate new classification fields are present:
+   - `{project_name="webengine",log_type="http"} | logfmt | traffic_class=~".+" | endpoint_class=~".+" | rule_reason=~".+"`
+4. Validate suspicious class is populated:
+   - `{project_name="webengine",log_type="http"} | logfmt | traffic_class="suspicious"`
+5. Validate bot-target segmentation:
+   - `{project_name="webengine",log_type="http"} | logfmt | traffic_class="suspicious" | endpoint_class="bot_target"`
+6. Generate controlled requests and confirm dashboard movement:
+   - Normal request (e.g. `/`) should increase `traffic_class="normal"`.
+   - Probe request (e.g. `/.env`) should increase `traffic_class="suspicious"` and `endpoint_class="bot_target"`.
+7. Alert fallback check:
+   - If `traffic_class`/`endpoint_class` is missing, suspicious and probe alerts still evaluate via status/URI fallback queries.
 
 ### 3.3 Slack notifications (contact point + policy provisioned)
 

@@ -20,7 +20,7 @@ groups:
                 type: loki
                 uid: grafana_lokiq
               editorMode: code
-              expr: sum(rate({project_name="webengine",log_type="http"} | logfmt | status=~"403|444" [5m]))
+              expr: (sum(rate({project_name="webengine",log_type="http"} | logfmt | traffic_class="suspicious" [5m])) or sum(rate({project_name="webengine",log_type="http"} | logfmt | status=~"403|444" [5m])))
               intervalMs: 1000
               maxDataPoints: 43200
               refId: A
@@ -77,7 +77,7 @@ groups:
                 type: loki
                 uid: grafana_lokiq
               editorMode: code
-              expr: sum(rate({project_name="webengine",log_type="http"} | logfmt | uri=~"(?i)^/(\\.env|\\.git|\\.htaccess|wp-admin|wp-login|phpmyadmin|server-status|config\\.php|backup\\.sql).*" [5m]))
+              expr: (sum(rate({project_name="webengine",log_type="http"} | logfmt | traffic_class="suspicious" | endpoint_class="bot_target" [5m])) or sum(rate({project_name="webengine",log_type="http"} | logfmt | uri=~"(?i)^/(\\.env|\\.git|\\.htaccess|wp-admin|wp-login|phpmyadmin|server-status|config\\.php|backup\\.sql).*" [5m])))
               intervalMs: 1000
               maxDataPoints: 43200
               refId: A
