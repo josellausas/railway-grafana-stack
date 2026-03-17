@@ -56,7 +56,7 @@ In your webengine Railway project:
    - Tempo: mount path `/var/tempo`
    - Grafana: mount path `/var/lib/grafana`
 
-   Railway volumes mount as root. Each service uses a custom entrypoint that `chown`s the volume to the correct non-root user (Grafana 472, Loki/Tempo 10001, Prometheus 65534) before starting, so no `RAILWAY_RUN_UID` override is needed.
+   Railway volumes mount as root. Grafana, Loki, and Prometheus use a custom entrypoint that `chown`s the volume to the correct non-root user before starting. Tempo uses a distroless base (no shell), so it runs as root to write to `/var/tempo`.
 
 ### 2. Configure Grafana variables
 
@@ -88,11 +88,11 @@ To ingest webengine nginx logs into Loki with no code changes:
 
 ### 5. Volume permission errors (fallback)
 
-If a service fails with `permission denied` on its volume (e.g. `mkdir /loki/tsdb-cache: permission denied`), the entrypoint may not be running (e.g. distroless base image). Add this variable to the affected service:
+If Grafana, Loki, or Prometheus fails with `permission denied` on its volume, the entrypoint may not be running. Add this variable to the affected service:
 
 - `RAILWAY_RUN_UID` = `0`
 
-That runs the process as root so it can write to the volume. Prefer the default entrypoint-based fix when it works.
+That runs the process as root so it can write to the volume. Tempo already runs as root (distroless image; no shell for entrypoint).
 
 ## Optional Variables
 

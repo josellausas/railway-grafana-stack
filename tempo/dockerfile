@@ -1,16 +1,11 @@
 ARG VERSION=latest
 
-# gosu for dropping to tempo user after chown (Railway volumes mount as root)
-FROM tianon/gosu:1.16 AS gosu
-
 FROM grafana/tempo:${VERSION}
 
+# Tempo image is distroless (no /bin/sh); cannot run entrypoint script.
+# Run as root so Railway volume at /var/tempo is writable.
 USER root
-COPY --from=gosu /usr/local/bin/gosu /usr/local/bin/gosu
 
 COPY tempo.yml /etc/tempo/tempo.yml
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
-ENTRYPOINT ["/entrypoint.sh"]
 CMD ["-config.file=/etc/tempo/tempo.yml"]
